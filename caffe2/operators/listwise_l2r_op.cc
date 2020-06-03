@@ -27,15 +27,15 @@ void arg_sort(const TDATA* data, TIDX* idx, const size_t N, bool reverse) {
 #define PAIRWISE_DIFF(vec, N)                               \
   ((vec.matrix() * Eigen::MatrixXf::Ones(1, N) -            \
     Eigen::MatrixXf::Ones(N, 1) * vec.matrix().transpose()) \
-       .array())
+       .array()).eval()
 
-#define CWISE_SIGM(vec) (1. / (1. + (-(vec)).exp()))
+#define CWISE_SIGM(vec) (1. / (1. + (-(vec)).exp())).eval()
 
-#define CWISE_GT(vec1, vec2) ((vec1) > (vec2))
+#define CWISE_GT(vec1, vec2) ((vec1) > (vec2)).eval()
 
-#define CWISE_LT(vec1, vec2) ((vec1) < (vec2))
+#define CWISE_LT(vec1, vec2) ((vec1) < (vec2)).eval()
 
-#define CWISE_SIGN(vec) (CWISE_GT((vec), 0).cast<float>() * 2. - 1.)
+#define CWISE_SIGN(vec) (CWISE_GT((vec), 0).cast<float>() * 2. - 1.).eval()
 
 #define CWISE_LOG_SIGM(vec, huge) \
   (CWISE_GT((vec), (huge))        \
