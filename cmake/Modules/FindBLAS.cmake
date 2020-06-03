@@ -20,7 +20,7 @@ SET(BLAS_INCLUDE_DIR)
 SET(BLAS_INFO)
 SET(BLAS_F2C)
 
-SET(WITH_BLAS "" CACHE STRING "Blas type [mkl/open/goto/acml/atlas/accelerate/veclib/generic]")
+SET(WITH_BLAS "" CACHE STRING "Blas type [mkl/open/goto/acml/atlas/accelerate/veclib/ssl2/generic]")
 
 # Old FindBlas
 INCLUDE(CheckCSourceRuns)
@@ -236,6 +236,27 @@ if((NOT BLAS_LIBRARIES)
   "ptf77blas;atlas;gfortran")
   if (BLAS_LIBRARIES)
     set(BLAS_INFO "atlas")
+  endif (BLAS_LIBRARIES)
+endif()
+
+# BLAS in SSL2 library?
+if((NOT BLAS_LIBRARIES)
+    AND ((NOT WITH_BLAS) OR (WITH_BLAS STREQUAL "ssl2")))
+  if (CMAKE_CXX_COMPILER MATCHES ".*/FCC$" AND
+      CMAKE_C_COMPILER MATCHES ".*/fcc$")
+    check_fortran_libraries(
+    BLAS_LIBRARIES
+    BLAS
+    sgemm
+    "-SSL2;--linkfortran"
+    "fjlapackexsve")
+  endif()
+  if (BLAS_LIBRARIES)
+    set(BLAS_INFO "ssl2")
+    if (CMAKE_CXX_COMPILER MATCHES ".*/FCC$" AND
+       CMAKE_C_COMPILER MATCHES ".*/fcc$")
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -SSL2 --linkfortran")
+    endif()
   endif (BLAS_LIBRARIES)
 endif()
 
