@@ -86,6 +86,12 @@ if(USE_ROCM)
   add_subdirectory(hip)
 endif()
 
+if (CMAKE_CXX_COMPILER MATCHES ".*/FCC$" OR
+    CMAKE_C_COMPILER MATCHES ".*/fcc$")
+  link_directories(/lib64)
+  target_link_libraries(c10 PRIVATE stdc++)
+endif()
+
 # ---[ Installation
 # Note: for now, we will put all export path into one single Caffe2Targets group
 # to deal with the cmake deployment need. Inside the Caffe2Targets set, the

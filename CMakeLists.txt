@@ -97,6 +97,11 @@ else ()
     set(CPU_INTEL OFF)
   endif ()
 endif ()
+if (${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "aarch64")
+  set(CPU_AARCH64 ON)
+else ()
+  set(CPU_AARCH64 OFF)
+endif ()
 
 
 # For non-supported platforms, turn USE_DISTRIBUTED off by default.
@@ -188,9 +193,12 @@ option(USE_TENSORRT "Using Nvidia TensorRT library" OFF)
 option(USE_XNNPACK "Use XNNPACK" ON)
 option(USE_ZMQ "Use ZMQ" OFF)
 option(USE_ZSTD "Use ZSTD" OFF)
+if(CPU_INTEL OR CPU_AARCH64)
+    set(MKLDNN_SUPPORT ON)
+endif()
 cmake_dependent_option(
-  USE_MKLDNN "Use MKLDNN. Only available on x86 and x86_64." ON
-  "CPU_INTEL" OFF)
+    USE_MKLDNN "Use MKLDNN. Available on x86 and x86_64 and aarch64." ON
+    "MKLDNN_SUPPORT" OFF)
 set(MKLDNN_ENABLE_CONCURRENT_EXEC ${USE_MKLDNN})
 cmake_dependent_option(
     USE_MKLDNN_CBLAS "Use CBLAS in MKLDNN" OFF
