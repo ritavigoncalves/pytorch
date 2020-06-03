@@ -39,7 +39,7 @@ struct TORCH_API AccumulateGrad : public Node {
     if (!variable_grad.defined()) {
       // under following condition, we can avoid clone()
       if (!GradMode::is_enabled() && !new_grad.is_sparse() &&
-          new_grad.is_contiguous() &&
+	  !new_grad.is_mkldnn() && new_grad.is_contiguous() &&
           new_grad.use_count() <= num_expected_refs) {
         // first check it is in first-order grad only mode
         // then check not sparse before is_contiguous
