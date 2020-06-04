@@ -3607,6 +3607,12 @@
     SparseCUDA: copy_sparse_
   requires_tensor: True
 
+- func: copy_opaque_to_opaque_(Tensor(a!) self, Tensor src, bool non_blocking=False) -> Tensor(a!)
+  variants: function
+  dispatch:
+    MkldnnCPU: copy_mkldnn_
+  requires_tensor: True
+
 - func: unbind.int(Tensor(a) self, int dim=0) -> Tensor(a)[]
   variants: function, method
   supports_named_tensor: True
