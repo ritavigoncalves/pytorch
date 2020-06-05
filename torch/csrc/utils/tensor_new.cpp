@@ -335,10 +335,12 @@ void check_base_legacy_new(c10::DispatchKey dispatch_key, at::Layout expected_la
     TORCH_CHECK(dispatch_key == c10::DispatchKey::CPUTensorId
                 || dispatch_key == c10::DispatchKey::CUDATensorId
                 || dispatch_key == c10::DispatchKey::HIPTensorId
+		|| dispatch_key == c10::DispatchKey::MkldnnCPUTensorId
                 || dispatch_key == c10::XLATensorId(),
                 "new(): expected DispatchKey: ", c10::DispatchKey::CPUTensorId,
                 " or ", c10::DispatchKey::CUDATensorId,
                 " or ", c10::DispatchKey::HIPTensorId,
+		" or ", c10::DispatchKey::MkldnnCPUTensorId,
                 " or ", c10::DispatchKey::XLATensorId,
                 " but got: ", dispatch_key);
   } else if(expected_layout == c10::kSparse) {
