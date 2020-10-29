@@ -252,6 +252,35 @@ SugaredValuePtr ModuleValue::getitem(
         }
       }
       throw ErrorReport(loc) << "Key Error, " << idx_str;
+    } else if (auto containedTypeHint = concreteType_->getContainedTypeHint()) {
+      if (containedTypeHint) {
+        // For now, only dict type containedTypeHints are supported.
+        DictTypePtr dict_type = containedTypeHint->expect<DictType>();
+        auto graph = m.graph();
+
+        // Check that all submodules comply with the contained type hint.
+
+        const auto& self_type =
+            concreteType_->getJitType()->expect<ClassType>();
+        for (size_t i = 0; i < self_type->numAttributes(); ++i) {
+          const auto& attr_type = self_type->getAttribute(i);
+          if (attr_type->is_module()) {
+            if (!attr_type->isSubtypeOf(dict_type->getValueType())) {
+              auto loc = self_->node()->sourceRange();
+              throw ErrorReport(loc)
+                  << "Attribute " << self_type->getAttributeName(i)
+                  << " is not of annotated type "
+                  << dict_type->getValueType()->annotation_str();
+            }
+          }
+        }
+
+        // Emit a prim::ModuleDictIndex operator.
+        auto* getitem_node = graph->insertNode(
+            graph->create(prim::ModuleDictIndex, {self_, idx}));
+        getitem_node->output(0)->setType(dict_type->getValueType());
+        return std::make_shared<SimpleValue>(getitem_node->output(0));
+      }
     }
     throw ErrorReport(loc)
         << "Unable to extract string literal index. "
