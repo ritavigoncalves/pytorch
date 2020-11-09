@@ -203,7 +203,7 @@ auto ReadyQueue::push(NodeTask item, bool incrementOutstandingTasks) -> void {
 
 auto ReadyQueue::pushShutdownTask() -> void {
   {
-    std::lock_guard<std::mutex> lock(mutex_);
+    //std::lock_guard<std::mutex> lock(mutex_);
     heap_.push(NodeTask({}, nullptr, InputBuffer(0), true));
   }
   not_empty_.notify_one();
@@ -218,7 +218,10 @@ size_t ReadyQueue::size() const {
 auto ReadyQueue::pop() -> NodeTask {
   // Lock mutex for accesses to heap_
   std::unique_lock<std::mutex> lock(mutex_);
-  not_empty_.wait(lock, [this]{ return !heap_.empty(); });
+  if (heap_.size() == 0) {
+      pushShutdownTask();
+  }
+  //not_empty_.wait(lock, [this]{ return !heap_.empty(); });
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
   auto task = std::move(const_cast<NodeTask&>(heap_.top())); heap_.pop();
   return task;
@@ -759,12 +762,31 @@ void Engine::enqueue_blocked_task_on_cpu(NodeTask task) {
 std::shared_ptr<FutureVariableList> Engine::execute_with_graph_task(
     const std::shared_ptr<GraphTask>& graph_task,
     std::shared_ptr<Node> graph_root) {
+
+  // See Note [Allocating GPUs to autograd threads]
+  c10::DeviceIndex num_devices = 0;
+  for (const auto& impl_atomic : c10::impl::device_guard_impl_registry) {
+    auto* impl = impl_atomic.load();
+    if (impl) {
+      num_devices = std::max(num_devices, impl->deviceCount());
+    }
+  }
+  int num_threads = num_devices + 1;
+  ready_queues_ = std::vector<std::shared_ptr<ReadyQueue>>(num_threads);
+  for (auto& queue : ready_queues_)
+    queue.reset(new ReadyQueue());
+
+  ready_queue(at::kCPU).push(
+      NodeTask(graph_task, std::move(graph_root), InputBuffer(0)));
+
   initialize_threads_pool();
   // Lock mutex for GraphTask.
   std::unique_lock<std::mutex> lock(graph_task->mutex_);
 
-  ready_queue(at::kCPU).push(
-      NodeTask(graph_task, std::move(graph_root), InputBuffer(0)));
+
+  //ready_queue(at::kCPU).push(
+  //    NodeTask(graph_task, std::move(graph_root), InputBuffer(0)));
+
 
   // Not a worker
   if (worker_device == NO_DEVICE) {
@@ -924,15 +946,17 @@ auto Engine::start_threads() -> void {
   // One for CPU, plus one for every GPU device (but colocate GPUs of different
   // types)
   int num_threads = num_devices + 1;
-  ready_queues_ = std::vector<std::shared_ptr<ReadyQueue>>(num_threads);
-  for (auto& queue : ready_queues_)
-    queue.reset(new ReadyQueue());
+  //ready_queues_ = std::vector<std::shared_ptr<ReadyQueue>>(num_threads);
+  //for (auto& queue : ready_queues_)
+  //  queue.reset(new ReadyQueue());
 
   thread_pool_shared_ = std::make_shared<ThreadPoolShared>();
 
-  for (int i = 0; i < num_threads; ++i) {
-    std::thread t(&Engine::thread_init, this, i - 1);
-    t.detach();
+  //for (int i = 0; i < num_threads; ++i) {
+  for (int i = 0; i < 1; ++i) {
+    //std::thread t(&Engine::thread_init, this, i - 1);
+    //t.detach();
+    thread_init(i - 1);
   }
 }
 
